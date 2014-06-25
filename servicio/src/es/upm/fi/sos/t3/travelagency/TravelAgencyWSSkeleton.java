@@ -8,10 +8,34 @@
 package es.upm.fi.sos.t3.travelagency;
 
 import java.util.*;
+import org.apache.axis2.AxisFault;
 
-import es.upm.fi.sos.t3.flightBooking.FlightBookingWSStub.*;
-import es.upm.fi.sos.t3.loginservice.LoginServiceWSStub.*;
-import es.upm.fi.sos.t3.hotelbooking.HotelBookingWSStub.*;
+import java.rmi.RemoteException;
+import es.upm.fi.sos.t3.loginservice.LoginServiceWSStub.LoginToken;
+import es.upm.fi.sos.t3.hotelbooking.HotelBookingWSStub.CancellingHotel;
+import es.upm.fi.sos.t3.hotelbooking.HotelBookingWSStub.CheckingHotel;
+import es.upm.fi.sos.t3.hotelbooking.HotelBookingWSStub;
+import es.upm.fi.sos.t3.flightbooking.FlightBookingWSStub.CheckingFlight;
+
+import es.upm.fi.sos.t3.hotelbooking.NotValidRoomError;
+import es.upm.fi.sos.t3.flightbooking.FlightBookingWSStub;
+import es.upm.fi.sos.t3.flightbooking.FlightBookingWSStub.BookingFlight;
+import es.upm.fi.sos.t3.flightbooking.FlightBookingWSStub.BookingFlightResponse;
+import es.upm.fi.sos.t3.flightbooking.FlightBookingWSStub.Origin;
+import es.upm.fi.sos.t3.hotelbooking.NotValidHotelError;
+import es.upm.fi.sos.t3.flightbooking.FlightBookingWSStub.CancellingFlight;
+import es.upm.fi.sos.t3.loginservice.LoginError;
+import es.upm.fi.sos.t3.loginservice.LoginServiceWSStub;
+import es.upm.fi.sos.t3.hotelbooking.NotEnoughRoomsError;
+import es.upm.fi.sos.t3.flightbooking.NotEnoughSeatsError;
+import es.upm.fi.sos.t3.hotelbooking.NotValidCityError;
+import es.upm.fi.sos.t3.hotelbooking.HotelBookingWSStub.BookingHotel;
+import es.upm.fi.sos.t3.hotelbooking.HotelBookingWSStub.City;
+import es.upm.fi.sos.t3.flightbooking.NotValidDestinationError;
+import es.upm.fi.sos.t3.flightbooking.NotValidSeatError;
+import es.upm.fi.sos.t3.hotelbooking.HotelBookingWSStub.BookingHotelResponse;
+import es.upm.fi.sos.t3.flightbooking.NotValidOriginError;
+
 
 /**
  *  TravelAgencyWSSkeleton java skeleton for the axisService
@@ -88,7 +112,7 @@ public class TravelAgencyWSSkeleton{
 		)
 		throws RemoteServiceError{
 			LoginResponse resp = new LoginResponse();
-			Usuario user = registro.get(login.getUsername);
+			Usuario user = registro.get(login.getUsername());
 			if(user.sesion){
 				resp.setLoginResponse(true);
 			}
@@ -101,9 +125,12 @@ public class TravelAgencyWSSkeleton{
 				try{
 					resp.setLoginResponse(ls.authenticateUser(lt).getLoginTokenResponse());
 				}
-				catch (RemoteServiceError | LoginError e){
+				catch (RemoteException e){
 					RemoteServiceError err = new RemoteServiceError();
 					throw err;
+				}catch (LoginError e){
+					RemoteServiceError err = new RemoteServiceError();
+                                        throw err;
 				}
 				if(resp.getLoginResponse()){
 					String nombre = login.getUsername();
