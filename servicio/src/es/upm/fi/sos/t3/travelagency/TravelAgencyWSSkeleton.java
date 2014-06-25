@@ -65,8 +65,23 @@ public class TravelAgencyWSSkeleton{
 	}
 
 	private static HashMap<String, Usuario> registro = new HashMap<String, Usuario>();
-	LoginServiceWSStub ls = new LoginServiceWSStub();
-	
+	try{
+		LoginServiceWSStub ls = new LoginServiceWSStub();
+		ls._getServiceClient().engageModule("addressing");
+		ls._getServiceClient().getOptions().setManageSession(true);
+
+		FlightBookingWSStub fb = new FlightBookingWSStub();
+		fb._getServiceClient().engageModule("addressing");
+		fb._getServiceClient().getOptions().setManageSession(true);
+
+		HotelBookingWSstub hb = new HotelBookingWSStub();
+		hb._getServiceClient().engageModule("addressing");
+		hb._getServiceClient().getOptions().setManageSession(true);
+	}
+	catch (AxisFault e){
+		e.printStackTrace(System.err);
+	}
+
 	public es.upm.fi.sos.t3.travelagency.CheckingTripResponse checkTrip
 		(
 		 es.upm.fi.sos.t3.travelagency.CheckingTrip checkingTrip
