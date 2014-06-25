@@ -6,6 +6,13 @@
  * by the Apache Axis2 version: 1.5.4  Built on : Dec 19, 2010 (08:18:42 CET)
  */
 package es.upm.fi.sos.t3.travelagency;
+
+import java.util.*;
+
+import es.upm.fi.sos.t3.flightBooking.FlightBookingWSStub.*;
+import es.upm.fi.sos.t3.loginservice.LoginServiceWSStub.*;
+import es.upm.fi.sos.t3.hotelbooking.HotelBookingWSStub.*;
+
 /**
  *  TravelAgencyWSSkeleton java skeleton for the axisService
  */
@@ -24,6 +31,18 @@ public class TravelAgencyWSSkeleton{
 	 * @throws NotValidSessionError : 
 	 */
 
+	static class Usuario{
+		public double presupuesto;
+		public boolean sesion;
+		public Usuario() {
+			this.presupuesto = 10000.00;
+			this.sesion = false;
+		}
+	}
+
+	private static HashMap<String, Usuario> registro = new HashMap<String, Usuario>();
+	LoginServiceWSStub ls = new LoginServiceWSStub();
+	
 	public es.upm.fi.sos.t3.travelagency.CheckingTripResponse checkTrip
 		(
 		 es.upm.fi.sos.t3.travelagency.CheckingTrip checkingTrip
@@ -68,11 +87,42 @@ public class TravelAgencyWSSkeleton{
 		 es.upm.fi.sos.t3.travelagency.Login login
 		)
 		throws RemoteServiceError{
-		//TODO : fill this with the necessary business logic
-		throw new  java.lang.UnsupportedOperationException("Please implement " + this.getClass().getName() + "#login");
+			LoginResponse resp = new LoginResponse();
+			Usuario user = registro.get(login.getUsername);
+			if(user.sesion){
+				resp.setLoginResponse(true);
+			}
+			else{
+			/* Primero llamamos a Login Service para autenticar el usuario */
+				LoginToken lt = new LoginToken();
+				lt.setUsername(login.getUsername());
+				lt.setPassword(login.getPassword());
+
+				try{
+					resp.setLoginResponse(ls.authenticateUser(lt).getLoginTokenResponse());
+				}
+				catch (RemoteServiceError | LoginError e){
+					RemoteServiceError err = new RemoteServiceError();
+					throw err;
+				}
+				if(resp.getLoginResponse()){
+					String nombre = login.getUsername();
+					if(registro.containsKey(nombre)){
+						registro.get(nombre).sesion = true;
+					}
+					else{
+						Usuario usuario = new Usuario();
+						registro.put(nombre, usuario);
+						registro.get(nombre).sesion = true;
+					}
+					resp.setLoginResponse(true);
+				}
+			}
+			return resp;
 		}
 
 
+	
 	/**
 	 * Auto generated method signature
 	 * 
