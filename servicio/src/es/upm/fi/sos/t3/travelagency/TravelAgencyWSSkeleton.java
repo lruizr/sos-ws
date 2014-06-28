@@ -66,6 +66,7 @@ public class TravelAgencyWSSkeleton{
 
 	private static HashMap<String, Usuario> registro = new HashMap<String, Usuario>();
 	private Usuario user_aux = new Usuario();
+	private String name_key = null;
 	try{
 		LoginServiceWSStub ls = new LoginServiceWSStub();
 		ls._getServiceClient().engageModule("addressing");
@@ -159,6 +160,7 @@ public class TravelAgencyWSSkeleton{
 					resp.setLoginResponse(true);
 				}
 			}
+			name_key = login.getUsername();
 			user_aux = user;
 			return resp;
 		}
@@ -173,13 +175,25 @@ public class TravelAgencyWSSkeleton{
 	 */
 
 	public es.upm.fi.sos.t3.travelagency.CityHotelList getCityHotelList
-		(
-
-		)
+		()
 		throws RemoteServiceError,NotValidSessionError{
-		//TODO : fill this with the necessary business logic
-		throw new  java.lang.UnsupportedOperationException("Please implement " + this.getClass().getName() + "#getCityHotelList");
+		if (!user_aux.sesion){
+			NotValidSessionError err_session = new NotValidSessionError();
+			throw err_session;
 		}
+		else{
+			CityHotelList resp = new CityHotelList();
+			try{
+				String[] ciudades = hg.getCityList().getCity();
+				resp.setCity(ciudades);
+			}
+			catch(RemoteException e){
+				RemoteServiceError err_remote = new RemoteServiceError();
+				throw err_remote;
+			}
+			return resp;
+		}
+	}
 
 
 	/**
@@ -200,13 +214,39 @@ public class TravelAgencyWSSkeleton{
 	 */
 
 	public es.upm.fi.sos.t3.travelagency.BookingTripResponse bookTrip
-		(
-		 es.upm.fi.sos.t3.travelagency.BookingTrip bookingTrip
-		)
+		(es.upm.fi.sos.t3.travelagency.BookingTrip bookingTrip)
 		throws NotValidOriginFlightError,NotValidDestinationFlightError,NotEnoughSeatsFlightError,NotValidSeatFlightError,NotValidCityHotelError,NotValidHotelHotelError,NotEnoughRoomsHotelError,NotValidRoomHotelError,RemoteServiceError,NotValidSessionError,NotEnoughBudgetError{
-		//TODO : fill this with the necessary business logic
-		throw new  java.lang.UnsupportedOperationException("Please implement " + this.getClass().getName() + "#bookTrip");
+		if(!user_aux.sesion){
+			NotValidSessionError err = new NotValidSessionError();
+			throw err;
 		}
+		else{
+			BookingTripResponse resp = new BookingTripResponse();
+			/* Inicialmente establecemos a falsa la reserva */
+			resp.setBookingResult(false);
+			String origen = bookTrip.getOrigin();
+			String destino = bookTrip.getDestination();
+			String hotel = bookTrip.getHotel();
+			int asientos = bookTrip.getSeat();
+			int habitaciones = bookTrip.getRoom();
+			/* Reserva de vuelo */
+			BookingOnlyFlight bof = new BookingOnlyFlight();
+			/* Reserva de hotel*/
+			BookingOnlyHotel boh = new BookingOnlyHotel();
+			bof.setOrigin(origen);
+			bof.setDestination(destino);
+			boh.setCity(destino);
+			boh.setHotel(hotel);
+			/* Ahora vamos a obtener las respuestas */
+			BookingOnlyFlightResponse bof_resp = bookOnlyFlight(bof);
+			BookingOnlyHotelResponse boh_resp = bookOnlyHotel(boh);
+			/* Si se ejecuta la siguiente sentencia es que todo se ha llevado a cabo correctamente */
+			resp.setBookingResult(true);
+			int precio = bof_resp.getPrice() + boh_resp.getPrice();
+			resp.setPrice(precio);
+			return resp;
+		}
+	}
 
 
 	/**
@@ -258,13 +298,26 @@ public class TravelAgencyWSSkeleton{
 	 */
 
 	public es.upm.fi.sos.t3.travelagency.CheckingOnlyHotelResponse checkOnlyHotel
-		(
-		 es.upm.fi.sos.t3.travelagency.CheckingOnlyHotel checkingOnlyHotel
-		)
+		(es.upm.fi.sos.t3.travelagency.CheckingOnlyHotel checkingOnlyHotel)
 		throws NotValidCityHotelError,NotValidHotelHotelError,RemoteServiceError,NotValidSessionError{
-		//TODO : fill this with the necessary business logic
-		throw new  java.lang.UnsupportedOperationException("Please implement " + this.getClass().getName() + "#checkOnlyHotel");
+		if(!user_aux.sesion){
+			NotValidSessionError err_session = new NotValidSessionError();
+			throw err_session;
 		}
+		else{
+			CheckingOnlyHotelResponse resp = new CheckingOnlyHotelResponse();
+			CheckingHotel ch = new CheckingHotel();
+			ch.setCity(checkingOnlyHotel.getCity());
+			ch.setHotel(checkingOnlyHote.getHotel());
+			try{
+				int habitaciones = hb.checkHotel(ch).getRoomAvailability();
+				double precio = hb.checkHotel(ch).getPrice();
+				resp.setRoomAvailability(habitaciones);
+				resp.setPrice(precio);
+			}
+			/* Capturar excepciones */
+		}
+	}
 
 
 	/**
@@ -296,13 +349,29 @@ public class TravelAgencyWSSkeleton{
 	 */
 
 	public es.upm.fi.sos.t3.travelagency.HotelHotelList getHotelHotelList
-		(
-		 es.upm.fi.sos.t3.travelagency.CityHotel cityHotel
-		)
+		(es.upm.fi.sos.t3.travelagency.CityHotel cityHotel)
 		throws NotValidCityHotelError,RemoteServiceError,NotValidSessionError{
-		//TODO : fill this with the necessary business logic
-		throw new  java.lang.UnsupportedOperationException("Please implement " + this.getClass().getName() + "#getHotelHotelList");
+		if(!user.sesion){
+			NotValidSessionError err_session = new NotValidSessionError();
+			throw err_session;
 		}
+		else{
+			HotelHotelList resp = new HotelHotelList();
+			try{
+				String[] hoteles = hb.getHotelList().getHotel();
+				resp.setHotel(hoteles);
+			}
+			catch(RemoteException e){
+				RemoteServiceError err_remote = new RemoteServiceError();
+				throw err_remote;
+			}
+			catch(NotValidCityHotelError e){
+				NotValidCityHotelError err_hotel = new NotValidCityHotelError();
+				throw err_hotel;
+			}
+			return resp;
+		}
+	}
 
 
 	/**
@@ -311,8 +380,10 @@ public class TravelAgencyWSSkeleton{
 	 */
 
 	public void logout(){
-		if(user_aux.sesion)
+		if(user_aux.sesion){
 			user_aux.sesion = false;
+			registro.get(name_key).sesion = false;
+		}
 	}
 
 
