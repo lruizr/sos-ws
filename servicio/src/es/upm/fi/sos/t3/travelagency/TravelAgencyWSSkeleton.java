@@ -65,6 +65,7 @@ public class TravelAgencyWSSkeleton{
 	}
 
 	private static HashMap<String, Usuario> registro = new HashMap<String, Usuario>();
+	private Usuario user_aux = new Usuario();
 	try{
 		LoginServiceWSStub ls = new LoginServiceWSStub();
 		ls._getServiceClient().engageModule("addressing");
@@ -160,6 +161,7 @@ public class TravelAgencyWSSkeleton{
 					resp.setLoginResponse(true);
 				}
 			}
+			user_aux = user;
 			return resp;
 		}
 
@@ -215,14 +217,19 @@ public class TravelAgencyWSSkeleton{
 	 * @throws NotValidSessionError : 
 	 */
 
-	public es.upm.fi.sos.t3.travelagency.Budget getBudget
-		(
-
-		)
+	public es.upm.fi.sos.t3.travelagency.Budget getBudget()
 		throws NotValidSessionError{
-		//TODO : fill this with the necessary business logic
-		throw new  java.lang.UnsupportedOperationException("Please implement " + this.getClass().getName() + "#getBudget");
+		if (!user.sesion){
+			NotValidSessionError err = new NotValidSessionError();
+			throw err;
 		}
+		else{
+			Budget resp = new Budget();
+			double presupuesto = user_aux.presupuesto;
+			resp.setBudget(presupuesto);
+			return resp;
+		}
+	}
 
 
 	/**
