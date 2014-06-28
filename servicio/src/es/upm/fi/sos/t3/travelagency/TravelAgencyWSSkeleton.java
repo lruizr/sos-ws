@@ -84,13 +84,11 @@ public class TravelAgencyWSSkeleton{
 	}
 
 	public es.upm.fi.sos.t3.travelagency.CheckingTripResponse checkTrip
-		(
-		 es.upm.fi.sos.t3.travelagency.CheckingTrip checkingTrip
-		)
+		(es.upm.fi.sos.t3.travelagency.CheckingTrip checkingTrip)
 		throws NotValidOriginFlightError,NotValidDestinationFlightError,NotValidCityHotelError,NotValidHotelHotelError,RemoteServiceError,NotValidSessionError{
-		//TODO : fill this with the necessary business logic
-		throw new  java.lang.UnsupportedOperationException("Please implement " + this.getClass().getName() + "#checkTrip");
-		}
+		CheckingTripResponse resp = new CheckingTripResponse();
+		
+	}
 
 
 	/**
@@ -312,14 +310,10 @@ public class TravelAgencyWSSkeleton{
 	 * 
 	 */
 
-	public void logout
-		(
-
-		)
-		{
-			//TODO : fill this with the necessary business logic
-
-		}
+	public void logout(){
+		if(user_aux.sesion)
+			user_aux.sesion = false;
+	}
 
 
 	/**
