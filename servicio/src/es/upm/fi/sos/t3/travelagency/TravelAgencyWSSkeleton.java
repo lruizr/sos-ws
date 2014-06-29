@@ -84,6 +84,16 @@ public class TravelAgencyWSSkeleton{
 		e.printStackTrace(System.err);
 	}
 
+	private void compruebaSesion() throws NotValidSessionError{
+		if(!user_aux.sesion){
+			NotValidSessionError err = new NotValidSessionError();
+			ErrorMessage message = new ErrorMessage();
+			message.setErrorMessage("NotValidSessionError");
+			err.setFaultMessage(message);
+			throw err;
+		}
+	}
+
 	public es.upm.fi.sos.t3.travelagency.CheckingTripResponse checkTrip
 		(es.upm.fi.sos.t3.travelagency.CheckingTrip checkingTrip)
 		throws NotValidOriginFlightError,NotValidDestinationFlightError,NotValidCityHotelError,NotValidHotelHotelError,RemoteServiceError,NotValidSessionError{
@@ -142,10 +152,16 @@ public class TravelAgencyWSSkeleton{
 				}
 				catch (RemoteException e){
 					RemoteServiceError err = new RemoteServiceError();
+					ErrorMessage message = new ErrorMessage();
+					message.setErrorMessage("RemoteServiceError");
+					err.setFaultMessage(message);
 					throw err;
 				}catch (LoginError e){
 					RemoteServiceError err = new RemoteServiceError();
-                                        throw err;
+					ErrorMessage message = new ErrorMessage();
+					message.setErrorMessage("RemoteServiceError");
+					err.setFaultMessage(message);
+					throw err;
 				}
 				if(resp.getLoginResponse()){
 					String nombre = login.getUsername();
@@ -177,23 +193,21 @@ public class TravelAgencyWSSkeleton{
 	public es.upm.fi.sos.t3.travelagency.CityHotelList getCityHotelList
 		()
 		throws RemoteServiceError,NotValidSessionError{
-		if (!user_aux.sesion){
-			NotValidSessionError err_session = new NotValidSessionError();
-			throw err_session;
+		compruebaSesion();
+		CityHotelList resp = new CityHotelList();
+		try{
+			String[] ciudades = hg.getCityList().getCity();
+			resp.setCity(ciudades);
 		}
-		else{
-			CityHotelList resp = new CityHotelList();
-			try{
-				String[] ciudades = hg.getCityList().getCity();
-				resp.setCity(ciudades);
-			}
-			catch(RemoteException e){
-				RemoteServiceError err_remote = new RemoteServiceError();
-				throw err_remote;
-			}
-			return resp;
+		catch(RemoteException e){
+			RemoteServiceError err_remote = new RemoteServiceError();
+			ErrorMessage message = new ErrorMessage();
+			message.setErrorMessage("RemoteServiceError");
+			err_remote.setFaultMessage(message);
+			throw err_remote;
 		}
-	}
+		return resp;
+		}
 
 
 	/**
@@ -216,37 +230,32 @@ public class TravelAgencyWSSkeleton{
 	public es.upm.fi.sos.t3.travelagency.BookingTripResponse bookTrip
 		(es.upm.fi.sos.t3.travelagency.BookingTrip bookingTrip)
 		throws NotValidOriginFlightError,NotValidDestinationFlightError,NotEnoughSeatsFlightError,NotValidSeatFlightError,NotValidCityHotelError,NotValidHotelHotelError,NotEnoughRoomsHotelError,NotValidRoomHotelError,RemoteServiceError,NotValidSessionError,NotEnoughBudgetError{
-		if(!user_aux.sesion){
-			NotValidSessionError err = new NotValidSessionError();
-			throw err;
+		compruebaSesion();
+		BookingTripResponse resp = new BookingTripResponse();
+		/* Inicialmente establecemos a falsa la reserva */
+		resp.setBookingResult(false);
+		String origen = bookTrip.getOrigin();
+		String destino = bookTrip.getDestination();
+		String hotel = bookTrip.getHotel();
+		int asientos = bookTrip.getSeat();
+		int habitaciones = bookTrip.getRoom();
+		/* Reserva de vuelo */
+		BookingOnlyFlight bof = new BookingOnlyFlight();
+		/* Reserva de hotel*/
+		BookingOnlyHotel boh = new BookingOnlyHotel();
+		bof.setOrigin(origen);
+		bof.setDestination(destino);
+		boh.setCity(destino);
+		boh.setHotel(hotel);
+		/* Ahora vamos a obtener las respuestas */
+		BookingOnlyFlightResponse bof_resp = bookOnlyFlight(bof);
+		BookingOnlyHotelResponse boh_resp = bookOnlyHotel(boh);
+		/* Si se ejecuta la siguiente sentencia es que todo se ha llevado a cabo correctamente */
+		resp.setBookingResult(true);
+		int precio = bof_resp.getPrice() + boh_resp.getPrice();
+		resp.setPrice(precio);
+		return resp;
 		}
-		else{
-			BookingTripResponse resp = new BookingTripResponse();
-			/* Inicialmente establecemos a falsa la reserva */
-			resp.setBookingResult(false);
-			String origen = bookTrip.getOrigin();
-			String destino = bookTrip.getDestination();
-			String hotel = bookTrip.getHotel();
-			int asientos = bookTrip.getSeat();
-			int habitaciones = bookTrip.getRoom();
-			/* Reserva de vuelo */
-			BookingOnlyFlight bof = new BookingOnlyFlight();
-			/* Reserva de hotel*/
-			BookingOnlyHotel boh = new BookingOnlyHotel();
-			bof.setOrigin(origen);
-			bof.setDestination(destino);
-			boh.setCity(destino);
-			boh.setHotel(hotel);
-			/* Ahora vamos a obtener las respuestas */
-			BookingOnlyFlightResponse bof_resp = bookOnlyFlight(bof);
-			BookingOnlyHotelResponse boh_resp = bookOnlyHotel(boh);
-			/* Si se ejecuta la siguiente sentencia es que todo se ha llevado a cabo correctamente */
-			resp.setBookingResult(true);
-			int precio = bof_resp.getPrice() + boh_resp.getPrice();
-			resp.setPrice(precio);
-			return resp;
-		}
-	}
 
 
 	/**
@@ -257,16 +266,11 @@ public class TravelAgencyWSSkeleton{
 
 	public es.upm.fi.sos.t3.travelagency.Budget getBudget()
 		throws NotValidSessionError{
-		if (!user.sesion){
-			NotValidSessionError err = new NotValidSessionError();
-			throw err;
-		}
-		else{
-			Budget resp = new Budget();
-			double presupuesto = user_aux.presupuesto;
-			resp.setBudget(presupuesto);
-			return resp;
-		}
+		compruebaSesion();
+		Budget resp = new Budget();
+		double presupuesto = user_aux.presupuesto;
+		resp.setBudget(presupuesto);
+		return resp;
 	}
 
 
@@ -300,24 +304,40 @@ public class TravelAgencyWSSkeleton{
 	public es.upm.fi.sos.t3.travelagency.CheckingOnlyHotelResponse checkOnlyHotel
 		(es.upm.fi.sos.t3.travelagency.CheckingOnlyHotel checkingOnlyHotel)
 		throws NotValidCityHotelError,NotValidHotelHotelError,RemoteServiceError,NotValidSessionError{
-		if(!user_aux.sesion){
-			NotValidSessionError err_session = new NotValidSessionError();
-			throw err_session;
+		compruebaSesion();
+		CheckingOnlyHotelResponse resp = new CheckingOnlyHotelResponse();
+		CheckingHotel ch = new CheckingHotel();
+		ch.setCity(checkingOnlyHotel.getCity());
+		ch.setHotel(checkingOnlyHote.getHotel());
+		try{
+			int habitaciones = hb.checkHotel(ch).getRoomAvailability();
+			double precio = hb.checkHotel(ch).getPrice();
+			resp.setRoomAvailability(habitaciones);
+			resp.setPrice(precio);
 		}
-		else{
-			CheckingOnlyHotelResponse resp = new CheckingOnlyHotelResponse();
-			CheckingHotel ch = new CheckingHotel();
-			ch.setCity(checkingOnlyHotel.getCity());
-			ch.setHotel(checkingOnlyHote.getHotel());
-			try{
-				int habitaciones = hb.checkHotel(ch).getRoomAvailability();
-				double precio = hb.checkHotel(ch).getPrice();
-				resp.setRoomAvailability(habitaciones);
-				resp.setPrice(precio);
-			}
-			/* Capturar excepciones */
+		catch (RemoteException e){
+			RemoteServiceError err_remote = new RemoteServiceError();
+			ErrorMessage message_remote = new ErrorMessage();
+			message_remote.setErrorMessage("RemoteServiceError");
+			err_remote.setFaultMessage(message_remote);
+			throw err_remote;
 		}
-	}
+		catch (NotValidCityHotelError){
+			NotValidCityHotelError err_city = new NotValidCityHotelError();
+			ErrorMessage message_city = new ErrorMessage();
+			message_city.setErrorMessage("NotValidCityHotelError");
+			err_city.setFaultMessage(message_city);
+			throw err_city;
+		}
+		catch (NotValidHotelHotelError){
+			NotValidHotelHotelError err_hotel = new NotValidHotelHotelError();
+			ErrorMessage message_hotel = new ErrorMessage();
+			message_hotel.setErrorMessage("NotvalidHotelHotelError");
+			err_hotel.setFaultMessage(message_hotel);
+			throw eer_hotel;
+		}
+		return resp;
+		}
 
 
 	/**
@@ -351,27 +371,28 @@ public class TravelAgencyWSSkeleton{
 	public es.upm.fi.sos.t3.travelagency.HotelHotelList getHotelHotelList
 		(es.upm.fi.sos.t3.travelagency.CityHotel cityHotel)
 		throws NotValidCityHotelError,RemoteServiceError,NotValidSessionError{
-		if(!user.sesion){
-			NotValidSessionError err_session = new NotValidSessionError();
-			throw err_session;
+		compruebaSesion();
+		HotelHotelList resp = new HotelHotelList();
+		try{
+			String[] hoteles = hb.getHotelList().getHotel();
+			resp.setHotel(hoteles);
 		}
-		else{
-			HotelHotelList resp = new HotelHotelList();
-			try{
-				String[] hoteles = hb.getHotelList().getHotel();
-				resp.setHotel(hoteles);
-			}
-			catch(RemoteException e){
-				RemoteServiceError err_remote = new RemoteServiceError();
-				throw err_remote;
-			}
-			catch(NotValidCityHotelError e){
-				NotValidCityHotelError err_hotel = new NotValidCityHotelError();
-				throw err_hotel;
-			}
-			return resp;
+		catch(RemoteException e){
+			RemoteServiceError err_remote = new RemoteServiceError();
+			ErrorMessage message_remote = new ErrorMessage();
+			message_remote.setErrorMessage("RemoteServiceError");
+			err_remote.setFaultMessage(message_remote);
+			throw err_remote;
 		}
-	}
+		catch(NotValidCityHotelError e){
+			NotValidCityHotelError err_hotel = new NotValidCityHotelError();
+			ErrorMessage message_hotel = new ErrorMessage();
+			message_hotel.setErrorMessage("NotValidCityHotelError");
+			err_hotel.setFaultMessage(message_hotel);
+			throw err_hotel;
+		}
+		return resp;
+		}
 
 
 	/**
@@ -401,12 +422,76 @@ public class TravelAgencyWSSkeleton{
 	 */
 
 	public es.upm.fi.sos.t3.travelagency.BookingOnlyHotelResponse bookOnlyHotel
-		(
-		 es.upm.fi.sos.t3.travelagency.BookingOnlyHotel bookingOnlyHotel
-		)
+		(es.upm.fi.sos.t3.travelagency.BookingOnlyHotel bookingOnlyHotel)
 		throws NotValidCityHotelError,NotValidHotelHotelError,NotEnoughRoomsHotelError,NotValidRoomHotelError,RemoteServiceError,NotValidSessionError,NotEnoughBudgetError{
-		//TODO : fill this with the necessary business logic
-		throw new  java.lang.UnsupportedOperationException("Please implement " + this.getClass().getName() + "#bookOnlyHotel");
+		compruebaSesion();
+		BookingOnlyHotelResponse resp = new BookingOnlyHotelResponse();
+		BookingHotel bh = new BookingHotel();
+		bh.setCity(bookingOnlyHotel.getCity());
+		bh.setHotel(bookingOnlyHotel.getHotel());
+		bh.setRoom(bookingOnlyHotel.getRoom());
+		try{
+			BookingHotelResp bh_resp = hb.bookHotel(bh);
+			double precio = bh_resp.getPrice();
+			boolean reservado = bh_resp.getBookingResult();
+			if(user_aux.budget >= precio){
+				resp.setPrice(precio);
+				resp.setBookingResult(reservado);
+				user_aux.presupuesto -= precio;
+				registro.get(name_key).presupuesto -= precio;
+			}
+			else{
+				/* Si no hay suficiente presupuesto, se cancela la reserva */
+				CancellingOnlyHotel coh = new CancellingOnlyHotel();
+				coh.setCity(bookingOnlyHotel.getCity());
+				coh.setHotel(bookingOnlyHotel.getHotel());
+				coh.setRoom(bookingOnlyHotel.getRoom());
+				CancellingOnlyHotelResponse coh_resp = cancelOnlyHotel(coh);
+
+				/* Y se lanza la excepción correspondiente*/
+				NotEnoughBudgetError err_budget = new NotEnoughBudgetError();
+				ErrorMessage message_budget = new ErrorMessage();
+				message_budget.setErrorMessage("NotEnoughBudgetError");
+				err_budget.setFaultMessage(message_budget);
+				throw err_budget;
+			}
+		}
+		catch (RemoteException e){
+			RemoteServiceError err_remote = new RemoteServiceError();
+			ErrorMessage message_remote = new ErrorMessage();
+			message_remote.setErrorMessage("RemoteServiceError");
+			err_remote.setFaultMessage(message_remote);
+			throw err_remote;
+		}
+		catch (NotValidCityHotelError e){
+			NotValidCityHotelError err_city = new NotValidCityHotelError();
+			ErrorMessage message_city = new ErrorMessage();
+			message_city.setErrorMessage("NotValidCityHotelError");
+			err_city.setFaultMessage(message_city);
+			throw err_city;
+		}
+		catch (NotValidHotelHotelError e){
+			NotValidHotelHotelError err_hotel = new NotValidHotelHotelError();
+			ErrorMessage message_hotel = new ErrorMessage();
+			message_hotel.setErrorMessage("NotValidHotelHotelError");
+			err_hotel.setFaultMessage(message_hotel);
+			throw err_hotel;
+		}
+		catch (NotEnoughRoomsHotelError e){
+			NotEnoughRoomsHotelError err_rooms = new NotEnoughRoomsHotelError();
+			ErrorMessage message_rooms = new ErrorMessage();
+			message_rooms.setErrorMessage("NotEnoughRoomsHotelError");
+			err_rooms.setFaultMessage(message_rooms);
+			throw err_rooms;
+		}
+		catch (NotValidRoomHotelError e){
+			NotValidRoomHotelError err_room = new NotValidRoomHotelError();
+			ErrorMessage message_room = new ErrorMessage();
+			message_room.setErrorMessage("NotValidRoomHotelError");
+			err_room.setFaultMessage(message_room);
+			throw err_room;
+		}
+		return resp;
 		}
 
 
