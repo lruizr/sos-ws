@@ -118,14 +118,59 @@ public class TravelAgencyWSSkeleton{
      * @throws NotValidSessionError : 
      */
     
-    public es.upm.fi.sos.t3.travelagency.CancellingOnlyHotelResponse cancelOnlyHotel
-	(
-	 es.upm.fi.sos.t3.travelagency.CancellingOnlyHotel cancellingOnlyHotel
-	 )
-	throws NotValidCityHotelError,NotValidHotelHotelError,NotEnoughRoomsHotelError,NotValidRoomHotelError,RemoteServiceError,NotValidSessionError{
-	//TODO : fill this with the necessary business logic
-	throw new  java.lang.UnsupportedOperationException("Please implement " + this.getClass().getName() + "#cancelOnlyHotel");
-    }
+	public es.upm.fi.sos.t3.travelagency.CancellingOnlyHotelResponse cancelOnlyHotel
+		(es.upm.fi.sos.t3.travelagency.CancellingOnlyHotel cancellingOnlyHotel)
+		throws NotValidCityHotelError,NotValidHotelHotelError,NotEnoughRoomsHotelError,NotValidRoomHotelError,RemoteServiceError,NotValidSessionError{
+		compruebaSesion();
+		CancellingOnlyHotelResponse resp = new CancellingOnlyHotelResponse();
+		String ciudad = cancellingOnlyHotel.getCity();
+		String hotel = cancellingOnlyHotel.getHotel();
+		int habitaciones = cancellingOnlyHotel.getRoom();
+		CancellingHotel ch = new CancellingHotel();
+		ch.setCity(ciudad);
+		ch.setHotel(hotel);
+		ch.setRoom(habitaciones);
+		try{
+			CancellingHotelResponse ch_resp = hb.cancelHotel(ch);
+			resp.setCancellingOnlyHotelResponse(ch_resp.getCancellingResult());
+		}
+		catch (RemoteException e){
+			RemoteServiceError err_remote = new RemoteServiceError();
+			RemoteServiceErrorMessage message_remote = new RemoteServiceErrorMessage();
+			message_remote.setRemoteServiceErrorMessage("RemoteServiceError");
+			err_remote.setFaultMessage(message_remote);
+			throw err_remote;
+		}
+		catch (NotValidCityHotelError e){
+			NotValidCityHotelError err_city = new NotValidCityHotelError();
+			NotValidCityHotelErrorMessage message_city = new NotValidCityHotelErrorMessage();
+			message_city.setNotValidCityHotelErrorMessage("NotValidCityHotelError");
+			err_city.setFaultMessage(message_city);
+			throw err_city;
+		}
+		catch (NotValidHotelHotelError e) {
+			NotValidHotelHotelError err_hotel = new NotValidHotelHotelError();
+			NotValidHotelHotelErrorMessage message_hotel = new NotValidHotelHotelErrorMessage();
+			message_hotel.setNotValidHotelHotelErrorMessage("NotValidHotelHotelError");
+			err_hotel.setFaultMessage(message_hotel);
+			throw err_hotel;
+		}
+		catch (NotEnoughRoomsHotelError e){
+			NotEnoughRoomsHotelError err_rooms = new NotEnoughRoomsHotelError();
+			NotEnoughRoomsHotelErrorMessage message_rooms = new NotEnoughRoomsHotelError();
+			message_rooms.setNotEnoughRoomsHotelErrorMessage("NotEnoughRoomsHotelError");
+			err_rooms.setFaultMessage(message_rooms);
+			throw err_rooms;
+		}
+		catch (NotValidRoomHotelError e) {
+			NotValidRoomHotelError err_room = new NotValidRoomHotelError();
+			NotValidRoomHotelErrorMessage message_room = new NotValidRoomHotelErrorMessage();
+			message_room.setNotValidRoomHotelErrorMessage("NotValidRoomHotelErrorMessage");
+			err_room.setFaultMessage(message_room);
+			throw err_room;
+		}
+		return resp;
+		}
     
     
     /**
@@ -326,17 +371,17 @@ public class TravelAgencyWSSkeleton{
 	    err_remote.setFaultMessage(message_remote);
 	    throw err_remote;
 	}
-	catch (NotValidCityError e){
+	catch (NotValidCityHotelError e){
 	    NotValidCityHotelError err_city = new NotValidCityHotelError();
 	    NotValidCityHotelErrorMessage message_city = new NotValidCityHotelErrorMessage();
 	    message_city.setNotValidCityHotelErrorMessage("NotValidCityHotelError");
 	    err_city.setFaultMessage(message_city);
 	    throw err_city;
 	}
-	catch (NotValidHotelError e){
+	catch (NotValidHotelHotelError e){
 	    NotValidHotelHotelError err_hotel = new NotValidHotelHotelError();
 	    NotValidHotelHotelErrorMessage message_hotel = new NotValidHotelHotelErrorMessage();
-	    message_hotel.setNotValidHotelHotelErrorMessage("NotvalidHotelHotelError");
+	    message_hotel.setNotValidHotelHotelErrorMessage("NotValidHotelHotelError");
 	    err_hotel.setFaultMessage(message_hotel);
 	    throw err_hotel;
 	}
@@ -396,6 +441,13 @@ public class TravelAgencyWSSkeleton{
 	    message_hotel.setNotValidCityHotelErrorMessage("NotValidCityHotelError");
 	    err_hotel.setFaultMessage(message_hotel);
 	    throw err_hotel;
+	}
+	catch (NotValidCityError e) {
+		NotValidCityError err_city = new NotValidCityError();
+		NotValidCityErrorMessage message_city = new NotValidCityErrorMessage();
+		message_city.setNotValidCityError("NotValidCityError");
+		err_city.setFaultMessage(message_city);
+		throw err_city;
 	}
 	return resp;
     }
@@ -496,6 +548,13 @@ public class TravelAgencyWSSkeleton{
 	    message_room.setNotValidRoomHotelErrorMessage("NotValidRoomHotelError");
 	    err_room.setFaultMessage(message_room);
 	    throw err_room;
+	}
+	catch (NotValidCityError e) {
+		NotValidCityError err_ciudad = new NotValidCityError();
+		NotValidCityErrorMessage message_ciudad = new NotValidCityErrorMessage();
+		message_ciudad.setNotValidCityError("NotValidCityError");
+		err_ciudad.setFaultMessage(message_city);
+		throw err_ciudad;
 	}
 	return resp;
     }
