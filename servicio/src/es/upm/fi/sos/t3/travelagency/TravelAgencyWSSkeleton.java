@@ -32,7 +32,9 @@ import es.upm.fi.sos.t3.hotelbooking.HotelBookingWSStub.BookingHotel;
 import es.upm.fi.sos.t3.hotelbooking.HotelBookingWSStub.City;
 import es.upm.fi.sos.t3.flightbooking.NotValidDestinationError;
 import es.upm.fi.sos.t3.flightbooking.NotValidSeatError;
+import es.upm.fi.sos.t3.flightbooking.NotEnoughSeatsError;
 import es.upm.fi.sos.t3.hotelbooking.HotelBookingWSStub.BookingHotelResponse;
+import es.upm.fi.sos.t3.flightbooking.FlightBookingWSStub.CancellingFlightResponse;
 import es.upm.fi.sos.t3.flightbooking.NotValidOriginError;
 import es.upm.fi.sos.t3.hotelbooking.NotValidCityError;
 import es.upm.fi.sos.t3.hotelbooking.HotelBookingWSStub.CancellingHotelResponse;
@@ -98,12 +100,24 @@ public class TravelAgencyWSSkeleton{
 	    throw err;
 	}
     }
-    
+
     public es.upm.fi.sos.t3.travelagency.CheckingTripResponse checkTrip
 	(es.upm.fi.sos.t3.travelagency.CheckingTrip checkingTrip)
 	throws NotValidOriginFlightError,NotValidDestinationFlightError,NotValidCityHotelError,NotValidHotelHotelError,RemoteServiceError,NotValidSessionError{
 	CheckingTripResponse resp = new CheckingTripResponse();
-	return null;
+	CheckingOnlyHotel hotel = new CheckingOnlyHotel();
+	CheckingOnlyFlight vuelo = new CheckingOnlyFlight();
+	vuelo.setDestination(checkingTrip.getDestination());
+	vuelo.setOrigin(checkingTrip.getOrigin());
+	hotel.setCity(checkingTrip.getDestination());
+	hotel.setHotel(checkingTrip.getHotel());
+        CheckingOnlyHotelResponse hres = checkOnlyHotel(hotel);
+	CheckingOnlyFlightResponse fres = checkOnlyFlight(vuelo);
+	resp.setSeatAvailability(fres.getSeatAvailability());
+	resp.setRoomAvailability(hres.getRoomAvailability());
+	resp.setSeatPrice(fres.getPrice()); 
+	resp.setRoomPrice(hres.getPrice()); 
+	return resp;
     }
     
     
@@ -330,14 +344,25 @@ public class TravelAgencyWSSkeleton{
      * @throws RemoteServiceError : 
      * @throws NotValidSessionError : 
      */
+    
 
-    public es.upm.fi.sos.t3.travelagency.OriginFlightList getOriginFlightList
-	(
-
-		)
+    
+    public es.upm.fi.sos.t3.travelagency.OriginFlightList getOriginFlightList()	
 	throws RemoteServiceError,NotValidSessionError{
-	//TODO : fill this with the necessary business logic
-	throw new  java.lang.UnsupportedOperationException("Please implement " + this.getClass().getName() + "#getOriginFlightList");
+	compruebaSesion();
+	OriginFlightList resp = new OriginFlightList();
+	String [] ciudades;
+	try{
+	    ciudades = fb.getOriginList().getOrigin();
+	    resp.setOrigin(ciudades);
+	}catch(RemoteException e){
+	    RemoteServiceError err_remote = new RemoteServiceError();
+	    RemoteServiceErrorMessage message_remote = new RemoteServiceErrorMessage();
+	    message_remote.setRemoteServiceErrorMessage("RemoteServiceError");
+	    err_remote.setFaultMessage(message_remote);
+	    throw err_remote;
+	}
+	return resp;
     }
 
 
@@ -398,14 +423,33 @@ public class TravelAgencyWSSkeleton{
      * @throws RemoteServiceError : 
      * @throws NotValidSessionError : 
      */
-
+        
     public es.upm.fi.sos.t3.travelagency.DestinationFlightList getDestinationFlightList
-	(
-	 es.upm.fi.sos.t3.travelagency.OriginFlight originFlight
-	 )
+	( es.upm.fi.sos.t3.travelagency.OriginFlight originFlight)
 	throws NotValidOriginFlightError,RemoteServiceError,NotValidSessionError{
-	//TODO : fill this with the necessary business logic
-	throw new  java.lang.UnsupportedOperationException("Please implement " + this.getClass().getName() + "#getDestinationFlightList");
+	compruebaSesion();
+	DestinationFlightList resp = new DestinationFlightList();
+	String [] ciudades;
+	Origin origen = new Origin();
+	origen.setOrigin(originFlight.getOriginFlight()); 
+	try{
+	    ciudades = fb.getDestinationList(origen).getDestination();
+	    resp.setDestination(ciudades);
+	}catch(RemoteException e){
+	    RemoteServiceError err_remote = new RemoteServiceError();
+	    RemoteServiceErrorMessage message_remote = new RemoteServiceErrorMessage();
+	    message_remote.setRemoteServiceErrorMessage("RemoteServiceError");
+	    err_remote.setFaultMessage(message_remote);
+	    throw err_remote;
+	}catch(NotValidOriginError e){
+	    NotValidOriginFlightError err_origin = new NotValidOriginFlightError();
+	    NotValidOriginFlightErrorMessage message_origin  = new NotValidOriginFlightErrorMessage();
+	    message_origin.setNotValidOriginFlightErrorMessage("NotValidOriginError");
+	    err_origin.setFaultMessage(message_origin);
+	    throw err_origin;
+	}
+	
+	return resp;
     }
 
 
@@ -436,20 +480,13 @@ public class TravelAgencyWSSkeleton{
 	    err_remote.setFaultMessage(message_remote);
 	    throw err_remote;
 	}
-	/*catch(NotValidCityHotelError e){
-	    NotValidCityHotelError err_hotel = new NotValidCityHotelError();
-	    NotValidCityHotelErrorMessage message_hotel = new NotValidCityHotelErrorMessage();
-	    message_hotel.setNotValidCityHotelErrorMessage("NotValidCityHotelError");
-	    err_hotel.setFaultMessage(message_hotel);
-	    throw err_hotel;
-	    }*/
 	catch (NotValidCityError e) {
-		NotValidCityHotelError err_city = new NotValidCityHotelError();
-		NotValidCityHotelErrorMessage message_city = new NotValidCityHotelErrorMessage();
-		message_city.setNotValidCityHotelErrorMessage("NotValidCityError");
-		err_city.setFaultMessage(message_city);
-		throw err_city;
-	}
+	    NotValidCityHotelError err_city = new NotValidCityHotelError();
+	    NotValidCityHotelErrorMessage message_city = new NotValidCityHotelErrorMessage();
+	    message_city.setNotValidCityHotelErrorMessage("NotValidCityError");
+	    err_city.setFaultMessage(message_city);
+	    throw err_city;
+	    }
 	return resp;
     }
 
@@ -521,15 +558,7 @@ public class TravelAgencyWSSkeleton{
 	    message_remote.setRemoteServiceErrorMessage("RemoteServiceError");
 	    err_remote.setFaultMessage(message_remote);
 	    throw err_remote;
-	}/*
-	catch (NotValidCityHotelError e){
-	    NotValidCityHotelError err_city = new NotValidCityHotelError();
-	    NotValidCityHotelErrorMessage message_city = new NotValidCityHotelErrorMessage();
-	    message_city.setNotValidCityHotelErrorMessage("NotValidCityHotelError");
-	    err_city.setFaultMessage(message_city);
-	    throw err_city;
-	    }*/
-	catch (NotValidHotelError e){
+	}catch (NotValidHotelError e){
 	    NotValidHotelHotelError err_hotel = new NotValidHotelHotelError();
 	    NotValidHotelHotelErrorMessage message_hotel = new NotValidHotelHotelErrorMessage();
 	    message_hotel.setNotValidHotelHotelErrorMessage("NotValidHotelHotelError");
@@ -572,14 +601,54 @@ public class TravelAgencyWSSkeleton{
      * @throws RemoteServiceError : 
      * @throws NotValidSessionError : 
      */
-
+    
     public es.upm.fi.sos.t3.travelagency.CancellingOnlyFlightResponse cancelOnlyFlight
 	(
 	 es.upm.fi.sos.t3.travelagency.CancellingOnlyFlight cancellingOnlyFlight
 	 )
 	throws NotValidOriginFlightError,NotValidDestinationFlightError,NotEnoughSeatsFlightError,NotValidSeatFlightError,RemoteServiceError,NotValidSessionError{
-	//TODO : fill this with the necessary business logic
-	throw new  java.lang.UnsupportedOperationException("Please implement " + this.getClass().getName() + "#cancelOnlyFlight");
+	compruebaSesion();
+	CancellingOnlyFlightResponse resp = new CancellingOnlyFlightResponse();
+	CancellingFlight cancel = new CancellingFlight();
+	cancel.setSeat(cancellingOnlyFlight.getSeat());
+	cancel.setOrigin(cancellingOnlyFlight.getOrigin());
+	cancel.setDestination(cancellingOnlyFlight.getDestination());
+	try{
+	    CancellingFlightResponse cfr = fb.cancelFlight(cancel);
+	    resp.setCancellingOnlyFlightResponse(cfr.getCancellingResult());
+	}
+	catch (RemoteException e){
+	    RemoteServiceError err_remote = new RemoteServiceError();
+	    RemoteServiceErrorMessage message_remote = new RemoteServiceErrorMessage();
+	    message_remote.setRemoteServiceErrorMessage("RemoteServiceError");
+	    err_remote.setFaultMessage(message_remote);
+	    throw err_remote;
+	}catch(NotValidOriginError e){
+	    NotValidOriginFlightError err_origin = new NotValidOriginFlightError();
+	    NotValidOriginFlightErrorMessage message_origin  = new NotValidOriginFlightErrorMessage();
+	    message_origin.setNotValidOriginFlightErrorMessage("NotValidOriginError");
+	    err_origin.setFaultMessage(message_origin);
+	    throw err_origin;
+	}catch(NotValidDestinationError e){
+	    NotValidDestinationFlightError err_dest = new NotValidDestinationFlightError();
+	    NotValidDestinationFlightErrorMessage message_dest  = new NotValidDestinationFlightErrorMessage();
+	    message_dest.setNotValidDestinationFlightErrorMessage("NotValidDestinationError");
+	    err_dest.setFaultMessage(message_dest);
+	    throw err_dest;
+	}catch(NotValidSeatError e){
+	    NotValidSeatFlightError err_seat = new NotValidSeatFlightError();
+	    NotValidSeatFlightErrorMessage message_seat  = new NotValidSeatFlightErrorMessage();
+	    message_seat.setNotValidSeatFlightErrorMessage("NotValidSeatError");
+	    err_seat.setFaultMessage(message_seat);
+	    throw err_seat;
+	}catch(NotEnoughSeatsError e){
+	    NotEnoughSeatsFlightError err_seats = new NotEnoughSeatsFlightError();
+	    NotEnoughSeatsFlightErrorMessage message_seats  = new NotEnoughSeatsFlightErrorMessage();
+	    message_seats.setNotEnoughSeatsFlightErrorMessage("NotValidSeatError");
+	    err_seats.setFaultMessage(message_seats);
+	    throw err_seats;
+	}   
+	return resp;
     }
 
 
@@ -601,8 +670,67 @@ public class TravelAgencyWSSkeleton{
 	 es.upm.fi.sos.t3.travelagency.BookingOnlyFlight bookingOnlyFlight
 	 )
 	throws NotValidOriginFlightError,NotValidDestinationFlightError,NotEnoughSeatsFlightError,NotValidSeatFlightError,RemoteServiceError,NotValidSessionError,NotEnoughBudgetError{
-	//TODO : fill this with the necessary business logic
-	throw new  java.lang.UnsupportedOperationException("Please implement " + this.getClass().getName() + "#bookOnlyFlight");
+	compruebaSesion();
+	BookingOnlyFlightResponse resp = new BookingOnlyFlightResponse();
+	BookingFlight vuelo = new BookingFlight();
+	vuelo.setSeat(bookingOnlyFlight.getSeat()); 
+	vuelo.setOrigin(bookingOnlyFlight.getOrigin()); 
+        vuelo.setDestination(bookingOnlyFlight.getDestination());
+	try{
+	    BookingFlightResponse book = fb.bookFlight(vuelo);
+	    double precio = book.getPrice();
+	    
+	    if(user_aux.presupuesto > precio){
+		resp.setPrice(precio);
+		resp.setBookingResult(book.getBookingResult());
+		user_aux.presupuesto -= precio;
+		registro.get(name_key).presupuesto = user_aux.presupuesto;
+	    }else{
+		CancellingOnlyFlight cancel = new CancellingOnlyFlight();
+		cancel.setSeat(bookingOnlyFlight.getSeat());
+		cancel.setOrigin(bookingOnlyFlight.getOrigin());
+		cancel.setDestination(bookingOnlyFlight.getDestination());
+		cancelOnlyFlight(cancel);
+
+		NotEnoughBudgetError err_bud = new NotEnoughBudgetError();
+		NotEnoughBudgetErrorMessage message_bud = new NotEnoughBudgetErrorMessage();
+		message_bud.setNotEnoughBudgetErrorMessage("NotEnoughBudgetError");
+		err_bud.setFaultMessage(message_bud);
+		throw err_bud;
+	    }
+	}catch (RemoteException e){
+	    RemoteServiceError err_remote = new RemoteServiceError();
+	    RemoteServiceErrorMessage message_remote = new RemoteServiceErrorMessage();
+	    message_remote.setRemoteServiceErrorMessage("RemoteServiceError");
+	    err_remote.setFaultMessage(message_remote);
+	    throw err_remote;
+	}catch(NotValidOriginError e){
+	    NotValidOriginFlightError err_origin = new NotValidOriginFlightError();
+	    NotValidOriginFlightErrorMessage message_origin  = new NotValidOriginFlightErrorMessage();
+	    message_origin.setNotValidOriginFlightErrorMessage("NotValidOriginError");
+	    err_origin.setFaultMessage(message_origin);
+	    throw err_origin;
+	}catch(NotValidDestinationError e){
+	    NotValidDestinationFlightError err_dest = new NotValidDestinationFlightError();
+	    NotValidDestinationFlightErrorMessage message_dest  = new NotValidDestinationFlightErrorMessage();
+	    message_dest.setNotValidDestinationFlightErrorMessage("NotValidDestinationError");
+	    err_dest.setFaultMessage(message_dest);
+	    throw err_dest;
+	}catch(NotValidSeatError e){
+	    NotValidSeatFlightError err_seat = new NotValidSeatFlightError();
+	    NotValidSeatFlightErrorMessage message_seat  = new NotValidSeatFlightErrorMessage();
+	    message_seat.setNotValidSeatFlightErrorMessage("NotValidSeatError");
+	    err_seat.setFaultMessage(message_seat);
+	    throw err_seat;
+	}catch(NotEnoughSeatsError e){
+	    NotEnoughSeatsFlightError err_seats = new NotEnoughSeatsFlightError();
+	    NotEnoughSeatsFlightErrorMessage message_seats  = new NotEnoughSeatsFlightErrorMessage();
+	    message_seats.setNotEnoughSeatsFlightErrorMessage("NotValidSeatError");
+	    err_seats.setFaultMessage(message_seats);
+	    throw err_seats;
+	}
+	    
+    return resp;
     }
 
 
@@ -616,13 +744,39 @@ public class TravelAgencyWSSkeleton{
      * @throws NotValidSessionError : 
      */
 
+    
     public es.upm.fi.sos.t3.travelagency.CheckingOnlyFlightResponse checkOnlyFlight
-	(
-	 es.upm.fi.sos.t3.travelagency.CheckingOnlyFlight checkingOnlyFlight
-	 )
+	(es.upm.fi.sos.t3.travelagency.CheckingOnlyFlight checkingOnlyFlight)
 	throws NotValidOriginFlightError,NotValidDestinationFlightError,RemoteServiceError,NotValidSessionError{
-	//TODO : fill this with the necessary business logic
-	throw new  java.lang.UnsupportedOperationException("Please implement " + this.getClass().getName() + "#checkOnlyFlight");
+	compruebaSesion();
+	CheckingOnlyFlightResponse resp = new CheckingOnlyFlightResponse();
+	CheckingFlight vuelo = new CheckingFlight();
+	vuelo.setOrigin(checkingOnlyFlight.getOrigin());
+	vuelo.setDestination(checkingOnlyFlight.getDestination());
+	try{
+	    resp.setSeatAvailability(fb.checkFlight(vuelo).getSeatAvailability());
+	    resp.setPrice(fb.checkFlight(vuelo).getPrice());
+	    
+	}catch(RemoteException e){
+	    RemoteServiceError err_remote = new RemoteServiceError();
+	    RemoteServiceErrorMessage message_remote = new RemoteServiceErrorMessage();
+	    message_remote.setRemoteServiceErrorMessage("RemoteServiceError");
+	    err_remote.setFaultMessage(message_remote);
+	    throw err_remote;
+	}catch(NotValidOriginError e){
+	    NotValidOriginFlightError err_origin = new NotValidOriginFlightError();
+	    NotValidOriginFlightErrorMessage message_origin  = new NotValidOriginFlightErrorMessage();
+	    message_origin.setNotValidOriginFlightErrorMessage("NotValidOriginError");
+	    err_origin.setFaultMessage(message_origin);
+	    throw err_origin;
+	}catch(NotValidDestinationError e){
+	    NotValidDestinationFlightError err_dest = new NotValidDestinationFlightError();
+	    NotValidDestinationFlightErrorMessage message_dest  = new NotValidDestinationFlightErrorMessage();
+	    message_dest.setNotValidDestinationFlightErrorMessage("NotValidDestinationError");
+	    err_dest.setFaultMessage(message_dest);
+	    throw err_dest;
+	}
+	return resp;
     }
 
 }
