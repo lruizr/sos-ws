@@ -60,16 +60,12 @@ public class TravelAgencyWSSkeleton{
 
 	static class Usuario{
 		public double presupuesto;
-		public boolean sesion;
-		public Usuario() {
-			this.presupuesto = 10000.00;
-			this.sesion = false;
-		}
+		public boolean sesion=false;
 	}
     
-    private static HashMap<String, Usuario> registro = new HashMap<String, Usuario>();
-    private Usuario user_aux = new Usuario();
-    private String name_key = null;
+    public static HashMap<String, Usuario> registro = new HashMap<String, Usuario>();
+    public static Usuario user_aux = new Usuario();
+    public static String name_key = new String();
     LoginServiceWSStub ls;
     FlightBookingWSStub fb;
     HotelBookingWSStub hb;
@@ -92,6 +88,7 @@ public class TravelAgencyWSSkeleton{
     }
     
     private void compruebaSesion() throws NotValidSessionError{
+	System.out.println("Comprobamos la sesion " + new Boolean(user_aux.sesion).toString());
 	if(!user_aux.sesion){
 	    NotValidSessionError err = new NotValidSessionError();
 	    NotValidSessionErrorMessage message = new NotValidSessionErrorMessage();
@@ -201,9 +198,9 @@ public class TravelAgencyWSSkeleton{
 	 )
 	throws RemoteServiceError{
 	LoginResponse resp = new LoginResponse();
-	Usuario user = registro.get(login.getUsername());
-	if(user.sesion){
-	    resp.setLoginResponse(true);
+	//System.out.println("ESTADO DEL user.sesion = " + new Boolean(user.sesion).toString());
+	if(user_aux.sesion){
+   		resp.setLoginResponse(true);
 	}
 	else{
 	    /* Primero llamamos a Login Service para autenticar el usuario */
@@ -213,7 +210,7 @@ public class TravelAgencyWSSkeleton{
 
 	    try{
 		resp.setLoginResponse(ls.authenticateUser(lt).getLoginTokenResponse());
-	    }
+		}
 	    catch (RemoteException e){
 		RemoteServiceError err = new RemoteServiceError();
 		RemoteServiceErrorMessage message = new RemoteServiceErrorMessage();
@@ -227,21 +224,25 @@ public class TravelAgencyWSSkeleton{
 		err.setFaultMessage(message);
 		throw err;
 	    }
+	    System.out.println("LOG: " + login.getUsername() + " " + login.getPassword() + " " + new Boolean(resp.getLoginResponse()).toString());
 	    if(resp.getLoginResponse()){
 		String nombre = login.getUsername();
 		if(registro.containsKey(nombre)){
+		    System.out.println("SIIIII EXISTEEEEEEEE");
 		    registro.get(nombre).sesion = true;
+		    user_aux = registro.get(nombre);
+		    user_aux.sesion=true;
 		}
 		else{
-		    Usuario usuario = new Usuario();
-		    registro.put(nombre, usuario);
-		    registro.get(nombre).sesion = true;
+		    System.out.println("NO EXISTEEEEEEEEE");
+		    user_aux.sesion = true;		    
+		    user_aux.presupuesto = 10000.00;
+		    registro.put(nombre, user_aux);
 		}
-		resp.setLoginResponse(true);
 	    }
 	}
 	name_key = login.getUsername();
-	user_aux = user;
+	System.out.print("Hemos dejado el login como " + new Boolean(user_aux.sesion).toString());
 	return resp;
     }
 
@@ -349,6 +350,7 @@ public class TravelAgencyWSSkeleton{
     
     public es.upm.fi.sos.t3.travelagency.OriginFlightList getOriginFlightList()	
 	throws RemoteServiceError,NotValidSessionError{
+	System.out.println("WEEEEEEEEEEEEEEEEEEEEEEe "+ new Boolean(user_aux.sesion).toString());
 	compruebaSesion();
 	OriginFlightList resp = new OriginFlightList();
 	String [] ciudades;
@@ -527,7 +529,9 @@ public class TravelAgencyWSSkeleton{
 	bh.setHotel(bookingOnlyHotel.getHotel());
 	bh.setRoom(bookingOnlyHotel.getRoom());
 	try{
+	    System.out.println("ANTES DE EJECUTAR");
 	    BookingHotelResponse bh_resp = hb.bookHotel(bh);
+	    System.out.println("DESPUES DE EJECUTAR");
 	    double precio = bh_resp.getPrice();
 	    boolean reservado = bh_resp.getBookingResult();
 	    if(user_aux.presupuesto >= precio){
